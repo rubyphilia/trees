@@ -1,0 +1,18 @@
+<% if @posts.empty? %>
+  <% %>
+	<h3>投稿された記事はありません。</h3>
+<% else %>
+  <h3>投稿された記事</h3>
+	<ul class="tree-menu">
+		<li>Root<ul>
+    <% @posts.each do |p| %>
+      <li>
+	    <%= p.id %>
+		  <%= p.comment.truncate 20 %>
+		  <%= p.name %>
+		  <%= p.post_id %>
+	    </li>
+	  <% end %>
+	</ul></li>
+  </ul>
+<% end %>

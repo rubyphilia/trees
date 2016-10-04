@@ -1,0 +1,159 @@
+<script>
+  $(document).ready(function() {
+		$.ajax({
+			url: "<%= get_posts_tree_path %>",
+  		type: "GET",
+			dataType: "script",
+			success: function(data) {
+			  $(".box").hide();
+			},
+		});
+  	$('#section').change(function() {
+  		$.ajax({
+  			url: "<%= get_posts_tree_path %>",
+				type: "GET",
+				dataType: "script",
+        success: function(data) {
+					$(".box").hide();
+					$("#post_new").hide();
+				},
+        error: function(data) {alert("エラーが発生しました。");}
+  		});
+  	});
+		document.request_posts_with_ajax = function () {
+			function post2html(post) {
+				var sel0 = "#new";
+				var sel1 = "#ul"+post.id;
+				var sel2 = "ul"+post.id;
+				
+				var ret = '<li id="li'+post.id+'">#'+post.id+
+				', 内容：'+post.comment.substring(0,20)+
+				', 投稿者名：'+post.name+
+				//', 返信：'+post.post_id+
+				'<a href="javascript:$(\''+sel0+'\').prependTo(\''+sel1+'\');$(\'input#post_post_id\').val('+post.id+')">この投稿に返信する</a><ul id="'+sel2+'"></ul></li>'; 
+				return ret;
+			};
+			$("#new").prependTo("#tree_menu")//一時的に逃がす
+			$("#tree_here").html("情報を取得中です…");
+			$.ajax({
+				type: "GET", url: "posts.json", dataType: "json",
+				success: function(data) {
+					$("#tree_here").html("");
+					for(var i in data) {
+            var d = data[i];
+            $(post2html(d)).appendTo("#li"+d.post_id+">ul");
+				  }
+					$(".box").hide();
+					$("#new").prependTo("#tree_here")//ルートの位置に移動
+				},
+				error: function(data) {alert("失敗");}				
+			});
+	  	$("input#post_post_id").val(0).attr('readonly', true);
+		};
+		document.request_posts_with_ajax();
+
+
+// 記事に返信するフォームを呼び出し
+		document.request_new_post_with_ajax = function(post_id){
+			$.ajax({
+				type: "GET", url: "posts/edit/",
+				dataType: "json",
+				success: function(data) {
+					$("#tree_here").html("");
+					for(var i in data) {
+            var d = data[i];
+            $(post2html(d)).appendTo("#li"+d.post_id+">ul");
+				  }
+					$(".box").hide();
+					$("#new").prependTo("#tree_here")//一時的に退避
+				},
+				error: function(data) {alert("失敗");}				
+			});
+		}
+  });
+
+</script>
+<h2>Ajaxで①親投稿を取得して描画、②親投稿に取得した投稿を描画。</h2>
+	<ul class="tree-menu">
+		<li id="li0">#0 記事一覧<%= link_to '（ここをクリックすると最新情報を取得し表示を更新します）', get_ajax_path, remote: true, dataType: "script" %><ul id="tree_here">
+	  </ul></li>
+    <li id="new"><a href="javascript:$('#new_post').toggle();">新規投稿</a><%= render 'form', post: Post.new.set_post_id(0), remote: true %></li>
+		
+  </ul>
+
+<hr/>
+
+<h2>Ajaxで投稿一覧を取得できるようになった</h2>
+
+<%= select_tag "section", options_for_select({" a. " => "a", " b. "=> "b"}, {id:"section"})%>
+
+<div id="result_div">
+	<h3>投稿一覧を取得中</h3>
+</div>
+
+<hr/>
+
+<p id="notice"><%= notice %></p>
+
+<h1>投稿一覧</h1>
+<ul class="tree-menu">
+  <li id="root">Root
+		<ul>
+			<li><a href="javascript:$('.box').toggle();">新規投稿（←クリックでフォーム開閉。）</a>
+			<span class="box">
+        <h2>New Post</h2>
+        <%= render 'form', post: Post.new.set_post_id(0), remote: true %>
+			</span>
+			</li>
+
+    <% @posts.reverse.each do |post| %>
+        <li>＃<%= post.id %>
+					：<%= post.comment.truncate 20 %>
+					投稿者：<%= post.name %>
+					親Id.<%= post.post_id %>
+					操作：<%= link_to '返信', new_post_path %>|<%= link_to '見る', post %>|<%= link_to '編集', edit_post_path(post) %>|<%= link_to '削除', post, method: :delete, data: { confirm: 'Are you sure?' } %></li>
+    <% end %>
+
+    </ul>
+  </li>
+</ul>
+<hr />
+<h2>以下、Rails標準のindex表示</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Id.</th>
+      <th>Comment</th>
+      <th>Name</th>
+      <th>Post</th>
+      <th colspan="3"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+      <tr>
+        <td></td>
+        <td><%= link_to 'New Post', new_post_path %></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+    <% @posts.reverse.each do |post| %>
+      <tr>
+        <td><%= post.id %></td>
+        <td><%= post.comment %></td>
+        <td><%= post.name %></td>
+        <td><%= post.post_id %></td>
+        <td><%= link_to 'Show', post %></td>
+        <td><%= link_to 'Edit', edit_post_path(post) %></td>
+        <td><% link_to 'Destroy', post, method: :delete, data: { confirm: 'Are you sure?' } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<br>
+
+
